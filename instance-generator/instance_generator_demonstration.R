@@ -25,7 +25,6 @@ c_t <- 10/60
 search_duration <- s_t + c_t
 
 #restrictions
-mission_late_prob <- 0.20  # the allowed risk of not completing mission on time 
 n_revisits <- 3  # number of allowed revisits
 
 
@@ -69,6 +68,7 @@ for (d in 0:(n_nodes-1)) {
   temp_list <- cbind(rep(d,(n_nodes)), 0:n_targets)
   pair_matrix <- rbind(pair_matrix, temp_list)
 }
+pair_matrix <- pair_matrix[-1,]
 
 #---------------------------------------------------------------------------------------------------------------
 # travel duration --> d_{ij}

@@ -1,18 +1,14 @@
 # firefighting model by erdi dasdemir
-# first successful run !!! March 28, 2023 - 3:35 pm
-# successful run after all bugs are fixed !! March 29, 2023 - 17:00
-# combinations mode is added June 15, 2023 - 17:00
-
 
 # import required packages
 import numpy as np
 import pandas as pd
+
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 import mip_setup as mip_setup
 import mip_solve as mip_solve
 import openpyxl
-from itertools import combinations
 from datetime import datetime
 import os
 from random import sample
@@ -24,27 +20,30 @@ experiment_mode = user_inputs.parameters_df.loc["mode", "value"]
 
 
 # run optimization in single_run_mode
-if experiment_mode == "single_run":
+if experiment_mode == "single_objective":
     mip_inputs = mip_setup.InputsSetup(user_inputs)
+    mip_inputs.experiment_mode = experiment_mode
     mip_solve.mathematical_model_solve(mip_inputs)
 
 # run optimization in combination_mode
-elif experiment_mode == "combination_run":
-    fire_prone_node_list = user_inputs.problem_data_df.query("state == 0")["node_id"].tolist()
-    list_combinations = list()
-    for n in range(len(fire_prone_node_list) + 1):
-        combn_list = list(combinations(fire_prone_node_list, n))
-        if user_inputs.parameters_df.loc["n_nodes", "value"] <= 12:
-            list_combinations += combn_list
-        else:
-            list_combinations += sample(combn_list, min(20, len(combn_list)))
-    list_combinations = list_combinations[1:]
-    # i=list_combinations[5]
+elif experiment_mode == "multi_objective":
     user_inputs.run_start_date = str(datetime.now().strftime('%Y_%m_%d_%H_%M'))
-    for i in list_combinations:
-        print(i)
-        mip_inputs = mip_setup.InputsSetup(user_inputs, i)
-        run_result = mip_solve.mathematical_model_solve(mip_inputs)
+    vehicle_set = list(range(user_inputs.parameters_df.loc["n_vehicles", "value"], 1, -1))
+    time_limit_set = list(range(user_inputs.parameters_df.loc["time_limit", "value"], 1, -4))
+    detection_limit_set = sorted([round(elem, 2) for elem in np.arange(0.1, user_inputs.parameters_df.loc["probability_of_detection_limit", "value"], 0.1).tolist()], reverse=True)
+
+    for time_limit_now in [24, 20, 16, 12, 8, 4]:  # time_limit_set:
+        print("time_limit_now:", time_limit_now)
+        for detection_limit_now in [0.5, 0.4, 0.3, 0.2, 0.1]:  # detection_limit_set
+            print("detection_limit_now:", detection_limit_now)
+            for vehicle_size_now in [8, 7, 6, 5, 4, 3, 2]:  # vehicle_set:
+                print("vehicle_size_now:", vehicle_size_now)
+                user_inputs.time_limit_now = time_limit_now
+                user_inputs.detection_limit_now = detection_limit_now
+                user_inputs.vehicle_size_now = vehicle_size_now
+                mip_inputs = mip_setup.InputsSetup(user_inputs)
+                mip_solve.mathematical_model_solve(mip_inputs)
+
 
 
 
